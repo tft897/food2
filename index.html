@@ -10,23 +10,22 @@
         .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         h1 { color: #1a73e8; text-align: center; margin-bottom: 25px; }
         
-        /* 搜尋區域：移除按鈕，改為全寬搜尋框 */
+        /* 搜尋區域：設定為全寬，不顯示按鈕 */
         .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 100; }
-        input { width: 100%; padding: 15px 25px; border: 2px solid #dfe1e5; border-radius: 30px; font-size: 18px; outline: none; box-sizing: border-box; transition: 0.3s; }
-        input:focus { border-color: #1a73e8; box-shadow: 0 0 8px rgba(26,115,232,0.2); }
+        input { width: 100%; padding: 15px 20px; border: 2px solid #dfe1e5; border-radius: 25px; font-size: 18px; outline: none; box-sizing: border-box; }
+        input:focus { border-color: #1a73e8; }
         
-        #status { text-align: center; padding: 10px; color: #666; font-weight: bold; margin-bottom: 10px; }
+        #status { text-align: center; padding: 10px; color: #666; font-weight: bold; margin-bottom: 10px; border: 1px dashed #ccc; }
         
-        /* 表格樣式：標題統一藍底白字 */
+        /* 表格樣式：藍底白字 */
         .table-wrapper { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; min-width: 850px; }
         
+        /* 強制設定標題為藍底白字 */
         th { background-color: #1a73e8 !important; color: #ffffff !important; padding: 15px 12px; position: sticky; top: 0; font-weight: 500; text-align: center; }
         
         td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #444; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         tr:hover { background-color: #f1f7ff; }
         
-        /* 樣品名稱欄位固定 */
-        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: white; min-width: 160px; z-index: 10; }
-        tr:nth-child(even) .food-name { background-color: #f8f9fa;
+        .food-name
