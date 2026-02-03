@@ -21,7 +21,7 @@
         /* --- 固定標題列 --- */
         .fixed-header {
             flex-shrink: 0;
-            padding: 10px; /* 增加一點內距 */
+            padding: 10px;
             background: white;
             z-index: 1000;
             border-bottom: 1px solid #ddd;
@@ -37,10 +37,9 @@
             width: 100%;
         }
 
-        /* 1. 第一項 (標題/圖示) 字體變大 */
         h1 { 
             margin: 0; 
-            font-size: 1.8rem; /* 從 1.2rem 放大到 1.8rem */
+            font-size: 1.8rem; 
             line-height: 1;
         }
 
@@ -49,13 +48,12 @@
             position: relative; 
         }
 
-        /* 2. 搜尋欄字體變大 */
         input {
             width: 100%;
-            padding: 8px 12px; /* 稍微增加內距 */
+            padding: 8px 12px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            font-size: 17px; /* 從 14px 放大到 17px */
+            font-size: 17px;
             box-sizing: border-box;
             background-color: #f1f3f4;
             outline: none;
@@ -63,14 +61,14 @@
         }
         input:focus { background-color: white; border-color: #1a73e8; }
 
-        /* 更新後的單位提示文字 */
+        /* 更新後的單位提示文字：兩行顯示 */
         .unit-info {
             font-size: 11px;
             color: #666;
             text-align: center;
             width: 100%;
             margin-top: 2px;
-            line-height: 1.4;
+            line-height: 1.5; /* 增加一點行高，讓兩行文字不要黏太緊 */
         }
 
         /* --- 滾動區域 --- */
@@ -184,7 +182,10 @@
                 <input type="text" id="searchInput" oninput="doSearch()" placeholder="輸入食物名稱 (如: 蛋)..." disabled>
             </div>
         </div>
-        <div class="unit-info">此為食藥署2024年更新之資料庫，所列數值單位均為每100 g可食部分之含量。</div>
+        <div class="unit-info">
+            此為食藥署2024年更新之資料庫<br>
+            所列數值單位均為每100 g可食部分之含量。
+        </div>
     </div>
 
     <div class="scroll-content">
