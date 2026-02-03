@@ -6,54 +6,142 @@
     <title>食品營養查詢系統</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        /* --- 基礎設定 --- */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, sans-serif; background-color: #f0f2f5; padding: 15px; margin: 0; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        h1 { color: #1a73e8; text-align: center; margin: 10px 0 20px 0; font-size: 1.5rem; }
+        /* --- 全局設定 --- */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; padding: 10px; margin: 0; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        h1 { color: #1a73e8; text-align: center; margin: 5px 0 15px 0; font-size: 1.3rem; }
         
-        /* --- 搜尋區域 --- */
-        .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 1000; display: flex; gap: 10px; border-bottom: 1px solid #fff; }
-        input { flex: 1; padding: 12px 20px; border: 2px solid #dfe1e5; border-radius: 50px; font-size: 16px; outline: none; -webkit-appearance: none; }
-        input:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.2); }
-        button { padding: 0 20px; background: #1a73e8; color: white; border: none; border-radius: 50px; cursor: pointer; font-size: 15px; white-space: nowrap; font-weight: bold; }
+        /* --- 搜尋框 (固定頂部) --- */
+        .search-box { 
+            position: sticky; 
+            top: 0; 
+            background: white; 
+            padding: 10px 0; 
+            z-index: 1000; 
+            border-bottom: 1px solid #f0f0f0; 
+        }
+        input { 
+            width: 100%; 
+            padding: 12px 15px; 
+            border: 2px solid #dfe1e5; 
+            border-radius: 50px; 
+            font-size: 16px; 
+            outline: none; 
+            box-sizing: border-box; /* 重要：確保寬度不破版 */
+            -webkit-appearance: none;
+        }
+        input:focus { border-color: #1a73e8; }
         
-        #status { text-align: center; padding: 8px; color: #666; font-size: 13px; margin-bottom: 5px; }
+        #status { text-align: center; padding: 5px; color: #666; font-size: 12px; }
         
-        /* --- 表格區域 --- */
-        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #eee; -webkit-overflow-scrolling: touch; }
+        /* --- 列表表格 (外部) --- */
+        .table-wrapper { overflow-x: auto; margin-top: 5px; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 800px; }
         
-        th { background-color: #1a73e8 !important; color: white !important; padding: 12px 10px; position: sticky; top: 65px; z-index: 900; font-weight: 500; text-align: center; white-space: nowrap; }
+        /* 表頭：修正位置，避開搜尋框 (top: 62px) */
+        th { 
+            background-color: #1a73e8 !important; 
+            color: white !important; 
+            padding: 10px 8px; 
+            position: sticky; 
+            top: 62px; /* 關鍵：讓出搜尋框的高度 */
+            z-index: 900; 
+            text-align: center; 
+            white-space: nowrap; 
+            font-size: 14px;
+        }
+        /* 第一欄固定 (樣品名稱) */
         th:first-child { position: sticky; left: 0; z-index: 950; }
 
-        td { padding: 12px 8px; border-bottom: 1px solid #eee; text-align: center; color: #444; font-size: 15px; cursor: pointer; }
-        
-        /* 點擊行的互動效果 */
-        tr.data-row:hover { background-color: #e8f0fe !important; }
-        tr.data-row:active { background-color: #d2e3fc !important; }
-
+        td { padding: 10px 5px; border-bottom: 1px solid #eee; text-align: center; color: #333; font-size: 14px; cursor: pointer; }
         tr:nth-child(even) { background-color: #f8f9fa; }
-        
-        .food-name { text-align: left; font-weight: bold; color: #1a73e8; position: sticky; left: 0; background: white; min-width: 140px; max-width: 200px; z-index: 800; border-right: 2px solid #eee; text-decoration: underline; text-underline-offset: 4px; }
+        tr.data-row:active { background-color: #e8f0fe !important; } /* 點擊回饋 */
+
+        /* 樣品名稱欄位樣式 */
+        .food-name { 
+            text-align: left; 
+            font-weight: bold; 
+            color: #1a73e8; 
+            position: sticky; 
+            left: 0; 
+            background: white; 
+            min-width: 130px; 
+            max-width: 180px; 
+            z-index: 800; 
+            border-right: 1px solid #ddd; 
+            text-decoration: underline; 
+            text-underline-offset: 3px;
+        }
         tr:nth-child(even) .food-name { background-color: #f8f9fa; }
         .kcal { color: #d93025; font-weight: bold; }
 
         /* --- 詳情彈窗 (Modal) --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
-        .modal-container { background: white; width: 90%; max-width: 600px; max-height: 85vh; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.3s; }
-        .modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #1a73e8; border-radius: 12px 12px 0 0; color: white; }
-        .modal-title { font-size: 1.2rem; font-weight: bold; }
-        .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; }
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.5); z-index: 2000; display: none; 
+            justify-content: center; align-items: flex-end; /* 手機從下方滑出 */
+        }
         
-        .modal-body { padding: 0; overflow-y: auto; flex: 1; }
-        .detail-table { width: 100%; border-collapse: collapse; }
-        .detail-table tr { border-bottom: 1px solid #f0f0f0; }
-        .detail-table th { background: #f8f9fa !important; color: #555 !important; text-align: left; position: static; width: 50%; font-size: 14px; padding: 10px 15px; }
-        .detail-table td { text-align: right; padding: 10px 15px; color: #333; font-weight: bold; font-size: 14px; position: static; cursor: text; }
+        .modal-container { 
+            background: white; width: 100%; max-width: 600px; max-height: 85vh; 
+            border-radius: 15px 15px 0 0; display: flex; flex-direction: column; 
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+        }
 
-        /* Modal 動畫啟用狀態 */
-        .modal-overlay.active { opacity: 1; }
-        .modal-overlay.active .modal-container { transform: translateY(0); }
+        /* 電腦版彈窗置中 */
+        @media (min-width: 600px) {
+            .modal-overlay { align-items: center; }
+            .modal-container { width: 90%; border-radius: 12px; max-height: 80vh; }
+        }
+
+        .modal-header { 
+            padding: 12px 15px; 
+            background: #1a73e8; 
+            color: white; 
+            border-radius: 15px 15px 0 0; 
+            display: flex; justify-content: space-between; align-items: center; 
+            flex-shrink: 0; /* 防止標題被壓縮 */
+        }
+        @media (min-width: 600px) { .modal-header { border-radius: 12px 12px 0 0; } }
+        
+        .modal-title { font-size: 1.1rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .close-btn { background: none; border: none; color: white; font-size: 24px; padding: 0 10px; cursor: pointer; }
+        
+        .modal-body { 
+            padding: 0; 
+            overflow-y: auto; 
+            flex: 1; 
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* --- 詳細資料表格 (緊湊版) --- */
+        .detail-table { width: 100%; border-collapse: collapse; }
+        
+        .detail-table th, .detail-table td {
+            padding: 8px 15px; /* 縮小上下間距 */
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .detail-table th { 
+            background: #f8f9fa; 
+            color: #666; 
+            text-align: left; 
+            width: 45%; 
+            font-weight: normal;
+        }
+        
+        .detail-table td { 
+            text-align: right; 
+            color: #333; 
+            font-weight: bold; 
+        }
+
+        /* 斑馬紋讓緊湊的資料更好讀 */
+        .detail-table tr:nth-child(even) th,
+        .detail-table tr:nth-child(even) td {
+            background-color: #fafafa; 
+        }
     </style>
 </head>
 <body>
@@ -63,15 +151,14 @@
     <div id="status">正在準備資料庫...</div>
     
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="輸入食物名稱 (如: 雞蛋)..." disabled>
-        <button onclick="doSearch()">搜尋</button>
+        <input type="text" id="searchInput" oninput="doSearch()" placeholder="輸入關鍵字 (如: 蛋、大麥)..." disabled>
     </div>
 
     <div class="table-wrapper">
         <table id="resultTable" style="display:none;">
             <thead>
                 <tr>
-                    <th style="text-align:left;">樣品名稱 (點擊看詳情)</th>
+                    <th style="text-align:left;">樣品名稱 (點擊查看)</th>
                     <th>熱量(kcal)</th>
                     <th>蛋白質(g)</th>
                     <th>脂肪(g)</th>
@@ -87,9 +174,10 @@
 </div>
 
 <div id="detailModal" class="modal-overlay" onclick="closeModal(event)">
-    <div class="modal-container" onclick="event.stopPropagation()"> <div class="modal-header">
-            <span class="modal-title" id="modalTitle">食物名稱</span>
-            <button class="close-btn" onclick="closeModal()">×</button>
+    <div class="modal-container" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <span class="modal-title" id="modalTitle"></span>
+            <button class="close-btn" onclick="closeModal()">✕</button>
         </div>
         <div class="modal-body">
             <table class="detail-table">
@@ -100,11 +188,10 @@
 </div>
 
 <script>
-    let db = [];
-    let currentFiltered = []; // 儲存目前的搜尋結果，方便點擊時抓資料
-    
-    // 關鍵欄位的名稱 (用於列表顯示)，之後會自動抓取正確標題
-    let keyMap = { name: "", kcal: "", pro: "", fat: "", cho: "", na: "", k: "", p: "" };
+    let db = []; 
+    let displayData = []; 
+    let rawHeaders = []; 
+    let idx = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, na: 22, k: 23, p: 28 };
 
     Papa.parse("data.csv", {
         download: true,
@@ -112,44 +199,41 @@
         skipEmptyLines: true,
         complete: function(results) {
             const rows = results.data;
-            
-            // 1. 找標題列
-            let headerIdx = rows.findIndex(r => r.some(cell => cell && cell.includes("樣品名稱")));
-            if (headerIdx === -1) headerIdx = 0;
+            let headerRowIndex = rows.findIndex(r => r.some(cell => cell && cell.includes("樣品名稱")));
+            if (headerRowIndex === -1) headerRowIndex = 0;
 
-            const headers = rows[headerIdx];
-            
-            // 2. 建立完整的資料物件 & 抓出列表需要的關鍵欄位名稱
-            headers.forEach((h) => {
+            rawHeaders = rows[headerRowIndex];
+
+            // 校準列表索引
+            rawHeaders.forEach((h, i) => {
                 if(!h) return;
                 const txt = h.trim();
-                // 對應列表需要的欄位
-                if (txt === "樣品名稱") keyMap.name = txt;
-                if (txt.includes("熱量(kcal)")) keyMap.kcal = txt;
-                if (txt.includes("粗蛋白(g)")) keyMap.pro = txt;
-                if (txt.includes("粗脂肪(g)")) keyMap.fat = txt;
-                if (txt.includes("總碳水化合物(g)")) keyMap.cho = txt;
-                if (txt.includes("鈉(mg)")) keyMap.na = txt;
-                if (txt.includes("鉀(mg)")) keyMap.k = txt;
-                if (txt.includes("磷(mg)")) keyMap.p = txt;
+                if (txt === "樣品名稱") idx.name = i;
+                if (txt.includes("熱量(kcal)")) idx.kcal = i;
+                if (txt.includes("粗蛋白(g)")) idx.pro = i;
+                if (txt.includes("粗脂肪(g)")) idx.fat = i;
+                if (txt.includes("總碳水化合物(g)")) idx.cho = i;
+                if (txt.includes("鈉(mg)")) idx.na = i;
+                if (txt.includes("鉀(mg)")) idx.k = i;
+                if (txt.includes("磷(mg)")) idx.p = i;
             });
 
-            // 3. 轉換每一行為一個完整的物件 (包含所有欄位)
-            db = rows.slice(headerIdx + 1).map(row => {
-                let obj = {};
-                headers.forEach((h, i) => {
-                    if(h) obj[h.trim()] = row[i] || ""; // 把所有欄位都存起來
+            db = rows.slice(headerRowIndex + 1).map(row => {
+                let itemObj = {};
+                rawHeaders.forEach((headerName, index) => {
+                    if (headerName) {
+                        itemObj[headerName.trim()] = row[index] || "";
+                    }
                 });
-                return obj;
-            }).filter(item => item[keyMap.name]); // 過濾掉沒有名稱的空行
+                return itemObj;
+            }).filter(item => item["樣品名稱"]); 
 
-            document.getElementById('status').innerText = `✅ 資料就緒，共 ${db.length} 筆。點擊食物名稱可看完整成分。`;
+            document.getElementById('status').innerText = `✅ 資料就緒，共 ${db.length} 筆`;
             document.getElementById('status').style.color = "green";
             document.getElementById('searchInput').disabled = false;
         },
         error: function() {
-            document.getElementById('status').innerText = "❌ 讀取失敗：data.csv 遺失";
-            document.getElementById('status').style.color = "red";
+            document.getElementById('status').innerText = "❌ 讀取失敗：找不到 data.csv";
         }
     });
 
@@ -163,71 +247,56 @@
             return;
         }
 
-        // 搜尋並存入 currentFiltered
-        currentFiltered = db.filter(item => item[keyMap.name].toLowerCase().includes(query)).slice(0, 50);
+        displayData = db.filter(item => item["樣品名稱"].toLowerCase().includes(query)).slice(0, 50);
 
-        if (currentFiltered.length > 0) {
+        if (displayData.length > 0) {
             table.style.display = 'table';
-            // 產生列表，注意這裡加了 onclick="showDetail(index)"
-            body.innerHTML = currentFiltered.map((item, index) => `
-                <tr class="data-row" onclick="showDetail(${index})">
-                    <td class="food-name">${item[keyMap.name]}</td>
-                    <td class="kcal">${item[keyMap.kcal]}</td>
-                    <td>${item[keyMap.pro]}</td>
-                    <td>${item[keyMap.fat]}</td>
-                    <td>${item[keyMap.cho]}</td>
-                    <td>${item[keyMap.na]}</td>
-                    <td>${item[keyMap.k]}</td>
-                    <td>${item[keyMap.p]}</td>
+            body.innerHTML = displayData.map((item, index) => `
+                <tr class="data-row" onclick="openModal(${index})">
+                    <td class="food-name">${item["樣品名稱"]}</td>
+                    <td class="kcal">${item[rawHeaders[idx.kcal]] || 0}</td>
+                    <td>${item[rawHeaders[idx.pro]] || 0}</td>
+                    <td>${item[rawHeaders[idx.fat]] || 0}</td>
+                    <td>${item[rawHeaders[idx.cho]] || 0}</td>
+                    <td>${item[rawHeaders[idx.na]] || 0}</td>
+                    <td>${item[rawHeaders[idx.k]] || 0}</td>
+                    <td>${item[rawHeaders[idx.p]] || 0}</td>
                 </tr>
             `).join('');
         } else {
             table.style.display = 'none';
-            alert("找不到該食物，請換個關鍵字試試！");
         }
     }
 
-    // 顯示詳情彈窗
-    function showDetail(index) {
-        const item = currentFiltered[index];
+    function openModal(index) {
+        const item = displayData[index];
         const modal = document.getElementById('detailModal');
         const title = document.getElementById('modalTitle');
         const content = document.getElementById('modalContent');
-        
-        // 設定標題
-        title.innerText = item[keyMap.name];
 
-        // 產生所有營養成分的列表
+        title.innerText = item["樣品名稱"];
+        
         let html = '';
-        for (const [key, value] of Object.entries(item)) {
-            // 過濾掉空值或不需要顯示的欄位 (可選)
-            if (key !== "樣品名稱" && value !== "" && value !== "0" && value !== "0.0") {
+        for (let key in item) {
+            // 過濾空白與0值，讓列表更乾淨
+            if (key !== "樣品名稱" && item[key] !== "" && item[key] !== "0" && item[key] !== "0.0") {
                 html += `
                     <tr>
                         <th>${key}</th>
-                        <td>${value}</td>
+                        <td>${item[key]}</td>
                     </tr>
                 `;
             }
         }
         content.innerHTML = html;
-
-        // 顯示彈窗 (加動畫 class)
         modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('active'), 10);
     }
 
-    // 關閉彈窗
-    function closeModal(event) {
-        const modal = document.getElementById('detailModal');
-        modal.classList.remove('active');
-        setTimeout(() => modal.style.display = 'none', 300); // 等動畫結束再隱藏
+    function closeModal(e) {
+        if (!e || e.target.id === 'detailModal' || e.target.classList.contains('close-btn')) {
+            document.getElementById('detailModal').style.display = 'none';
+        }
     }
-
-    // 支援 Enter
-    document.getElementById('searchInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') doSearch();
-    });
 </script>
 
 </body>
