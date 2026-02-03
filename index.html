@@ -19,18 +19,19 @@
         
         #status { text-align: center; padding: 10px; color: #666; font-weight: bold; margin-bottom: 10px; border: 1px dashed #ccc; }
         
-        /* 表格樣式：標題藍底白字 */
+        /* 表格樣式：標題統一藍底白字 */
         .table-wrapper { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; min-width: 850px; }
         
-        th { background-color: #1a73e8; color: #ffffff !important; padding: 15px 12px; position: sticky; top: 0; font-weight: 500; text-align: center; }
+        /* 強制所有 th 為藍底白字 */
+        th { background-color: #1a73e8 !important; color: #ffffff !important; padding: 15px 12px; position: sticky; top: 0; font-weight: 500; text-align: center; }
         
         td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #444; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         tr:hover { background-color: #f1f7ff; }
         
-        /* 樣品名稱黏性固定 */
-        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: white; min-width: 160px; }
+        /* 樣品名稱欄位固定 */
+        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: white; min-width: 160px; z-index: 10; }
         tr:nth-child(even) .food-name { background-color: #f8f9fa; }
         
         .kcal { color: #d93025; font-weight: bold; }
@@ -43,7 +44,7 @@
     <div id="status">正在偵測資料格式...</div>
     
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="請輸入食物名稱 (如: 雞、大麥)..." disabled>
+        <input type="text" id="searchInput" placeholder="請輸入食物名稱 (如: 雞肉、大麥)..." disabled>
         <button onclick="doSearch()">搜尋</button>
     </div>
 
@@ -68,7 +69,7 @@
 
 <script>
     let db = [];
-    // 預設欄位索引
+    // 預設欄位索引，稍後會自動偵測標題行重新校準
     let colIndices = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, na: 22, k: 23, p: 28 };
 
     Papa.parse("data.csv", {
@@ -78,11 +79,12 @@
         complete: function(results) {
             const rows = results.data;
             
-            // 自動偵測標題列
+            // 尋找包含「樣品名稱」的標題列
             let headerIdx = rows.findIndex(r => r.some(cell => cell && cell.includes("樣品名稱")));
             if (headerIdx === -1) headerIdx = 0;
 
             const headers = rows[headerIdx];
+            // 自動匹配正確的欄位索引
             headers.forEach((h, i) => {
                 if(!h) return;
                 const txt = h.trim();
@@ -129,30 +131,4 @@
 
         const filtered = db.filter(item => item.name.toLowerCase().includes(query)).slice(0, 50);
 
-        if (filtered.length > 0) {
-            table.style.display = 'table';
-            body.innerHTML = filtered.map(item => `
-                <tr>
-                    <td class="food-name">${item.name}</td>
-                    <td class="kcal">${item.kcal}</td>
-                    <td>${item.pro}</td>
-                    <td>${item.fat}</td>
-                    <td>${item.cho}</td>
-                    <td>${item.na}</td>
-                    <td>${item.k}</td>
-                    <td>${item.p}</td>
-                </tr>
-            `).join('');
-        } else {
-            table.style.display = 'none';
-            alert("找不到該食物，請換個關鍵字試試！");
-        }
-    }
-
-    document.getElementById('searchInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') doSearch();
-    });
-</script>
-
-</body>
-</html>
+        if (filtered.length
