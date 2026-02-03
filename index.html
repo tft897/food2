@@ -3,41 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>食品營養查詢系統</title>
+    <title>食品營養查詢系統 (含鉀磷版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f4f7f9; padding: 20px; margin: 0; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        h1 { color: #1a73e8; text-align: center; margin-bottom: 20px; font-size: 28px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; text-align: center; margin-bottom: 25px; }
         
-        /* 搜尋框樣式 - 移除按鈕改為全寬 */
-        .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 100; }
-        input { width: 100%; padding: 15px 25px; border: 2px solid #ddd; border-radius: 30px; font-size: 18px; outline: none; box-sizing: border-box; transition: 0.3s; }
-        input:focus { border-color: #1a73e8; box-shadow: 0 0 8px rgba(26,115,232,0.2); }
+        .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 100; display: flex; gap: 10px; }
+        input { flex: 1; padding: 15px; border: 2px solid #dfe1e5; border-radius: 25px; font-size: 18px; outline: none; }
+        input:focus { border-color: #1a73e8; }
+        button { padding: 0 25px; background: #1a73e8; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background-color: #1557b0; }
         
-        #status { text-align: center; padding: 10px; color: #666; font-size: 14px; margin-bottom: 10px; }
+        #status { text-align: center; padding: 10px; color: #666; font-weight: bold; margin-bottom: 10px; border: 1px dashed #ccc; }
         
-        /* 表格樣式 - 藍底白字標頭 */
-        .table-wrapper { overflow-x: auto; margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 800px; }
-        th { background-color: #1a73e8; color: #ffffff; padding: 15px; position: sticky; top: 0; font-weight: 500; }
-        td { padding: 12px; border-bottom: 1px solid #f0f0f0; text-align: center; color: #444; }
-        tr:nth-child(even) { background-color: #fafafa; }
+        .table-wrapper { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; min-width: 850px; }
+        
+        /* 標題藍底白字 */
+        th { background-color: #1a73e8; color: white; padding: 15px 12px; position: sticky; top: 0; font-weight: 500; }
+        
+        td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
         tr:hover { background-color: #f1f7ff; }
         
-        .food-name { text-align: left; font-weight: bold; color: #222; position: sticky; left: 0; background: inherit; min-width: 160px; }
+        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: inherit; min-width: 160px; }
         .kcal { color: #d93025; font-weight: bold; }
-        .mineral { color: #2e7d32; font-weight: 500; } /* 磷、鉀、鈉用綠色區分 */
+        .mineral { color: #2e7d32; font-weight: 500; } /* 鈉、鉀、磷顏色區分 */
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🍎 食品營養查詢系統</h1>
-    <div id="status">正在載入資料庫...</div>
+    <div id="status">正在偵測資料格式...</div>
     
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="輸入食物名稱自動搜尋 (例：大麥、雞胸肉)..." disabled>
+        <input type="text" id="searchInput" placeholder="請輸入食物名稱 (如: 雞、大麥)..." disabled>
+        <button onclick="doSearch()">搜尋</button>
     </div>
 
     <div class="table-wrapper">
@@ -61,7 +65,7 @@
 
 <script>
     let db = [];
-    // 預設欄位索引，稍後會由程式自動校準
+    // 欄位對應
     let colIndices = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, na: 22, k: 23, p: 28 };
 
     Papa.parse("data.csv", {
@@ -71,11 +75,10 @@
         complete: function(results) {
             const rows = results.data;
             
-            // --- 自動偵測標題列位置 ---
+            // 自動偵測標題列
             let headerIdx = rows.findIndex(r => r.some(cell => cell && cell.includes("樣品名稱")));
             if (headerIdx === -1) headerIdx = 0;
 
-            // --- 自動校準欄位位置 ---
             const headers = rows[headerIdx];
             headers.forEach((h, i) => {
                 if(!h) return;
@@ -90,7 +93,6 @@
                 if (txt.includes("磷(mg)")) colIndices.p = i;
             });
 
-            // --- 整理資料 ---
             db = rows.slice(headerIdx + 1).map(row => ({
                 name: row[colIndices.name] ? row[colIndices.name].trim() : "",
                 kcal: row[colIndices.kcal] || "0",
@@ -102,17 +104,18 @@
                 p:    row[colIndices.p] || "0"
             })).filter(item => item.name !== "");
 
-            document.getElementById('status').innerText = `✅ 載入成功！共 ${db.length} 筆資料，輸入關鍵字即可搜尋。`;
+            document.getElementById('status').innerText = `✅ 載入成功！共 ${db.length} 筆資料。`;
+            document.getElementById('status').style.color = "green";
             document.getElementById('searchInput').disabled = false;
         },
         error: function() {
-            document.getElementById('status').innerText = "❌ 讀取失敗：請檢查 data.csv 是否正確上傳。";
+            document.getElementById('status').innerText = "❌ 讀取失敗：請檢查 data.csv 是否存在。";
+            document.getElementById('status').style.color = "red";
         }
     });
 
-    // 即時搜尋功能：監聽 input 事件
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-        const query = e.target.value.trim().toLowerCase();
+    function doSearch() {
+        const query = document.getElementById('searchInput').value.trim().toLowerCase();
         const table = document.getElementById('resultTable');
         const body = document.getElementById('resultBody');
 
@@ -121,7 +124,6 @@
             return;
         }
 
-        // 過濾前 50 筆符合條件的資料
         const filtered = db.filter(item => item.name.toLowerCase().includes(query)).slice(0, 50);
 
         if (filtered.length > 0) {
@@ -140,7 +142,12 @@
             `).join('');
         } else {
             table.style.display = 'none';
+            alert("找不到該食物，請換個關鍵字試試！");
         }
+    }
+
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doSearch();
     });
 </script>
 
