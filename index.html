@@ -2,48 +2,83 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>食品營養查詢系統</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        h1 { color: #1a73e8; text-align: center; margin-bottom: 25px; }
+        /* 基礎設定：手機版字體優化 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, sans-serif; background-color: #f0f2f5; padding: 15px; margin: 0; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h1 { color: #1a73e8; text-align: center; margin: 10px 0 20px 0; font-size: 1.5rem; }
         
-        /* 搜尋區域 */
-        .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 100; display: flex; gap: 10px; }
-        input { flex: 1; padding: 15px; border: 2px solid #dfe1e5; border-radius: 25px; font-size: 18px; outline: none; }
-        input:focus { border-color: #1a73e8; }
-        button { padding: 0 25px; background: #1a73e8; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        button:hover { background-color: #1557b0; }
+        /* --- 搜尋區域優化 --- */
+        /* 固定在最頂部，層級最高 (z-index: 1000) */
+        .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 1000; display: flex; gap: 10px; border-bottom: 1px solid #fff; }
         
-        #status { text-align: center; padding: 10px; color: #666; font-weight: bold; margin-bottom: 10px; border: 1px dashed #ccc; }
+        input { flex: 1; padding: 12px 20px; border: 2px solid #dfe1e5; border-radius: 50px; font-size: 16px; outline: none; -webkit-appearance: none; }
+        input:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.2); }
         
-        /* 表格樣式：標題藍底白字 */
-        .table-wrapper { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; min-width: 850px; }
+        button { padding: 0 20px; background: #1a73e8; color: white; border: none; border-radius: 50px; cursor: pointer; font-size: 15px; white-space: nowrap; font-weight: bold; }
+        button:active { background-color: #1557b0; transform: scale(0.98); }
         
-        th { background-color: #1a73e8; color: #ffffff !important; padding: 15px 12px; position: sticky; top: 0; font-weight: 500; text-align: center; }
+        #status { text-align: center; padding: 8px; color: #666; font-size: 13px; margin-bottom: 5px; }
         
-        td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #444; }
+        /* --- 表格區域優化 --- */
+        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #eee; -webkit-overflow-scrolling: touch; /* 讓 iOS 滑動更順暢 */ }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 800px; }
+        
+        /* 1. 表頭 (Th)：黏在搜尋框下方 (top: 70px)，層級次高 (z-index: 900) */
+        th { 
+            background-color: #1a73e8 !important; 
+            color: #ffffff !important; 
+            padding: 12px 10px; 
+            position: sticky; 
+            top: 65px; /* 關鍵修正：避開上方的搜尋框 */
+            z-index: 900; 
+            font-weight: 500; 
+            text-align: center; 
+            white-space: nowrap;
+        }
+        
+        /* 2. 左上角第一格 (表頭的樣品名稱)：要同時黏上面跟左邊，層級要是表頭裡最高的 (z-index: 950) */
+        th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 950;
+        }
+
+        /* 3. 資料列 (Td) */
+        td { padding: 12px 8px; border-bottom: 1px solid #eee; text-align: center; color: #444; font-size: 15px; }
         tr:nth-child(even) { background-color: #f8f9fa; }
-        tr:hover { background-color: #f1f7ff; }
         
-        /* 樣品名稱黏性固定 */
-        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: white; min-width: 160px; }
+        /* 4. 左側固定欄 (Food Name)：黏在左邊，層級要比普通資料高 (z-index: 800) */
+        .food-name { 
+            text-align: left; 
+            font-weight: bold; 
+            color: #333; 
+            position: sticky; 
+            left: 0; 
+            background: white; /* 必須設定背景色，不然滑動時文字會重疊 */
+            min-width: 140px; 
+            max-width: 200px;
+            z-index: 800;
+            border-right: 2px solid #eee; /* 加個右邊框區隔 */
+        }
+        
+        /* 修正：偶數行的左側固定欄背景色要跟著變 */
         tr:nth-child(even) .food-name { background-color: #f8f9fa; }
-        
+
         .kcal { color: #d93025; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🍎 食品營養查詢系統</h1>
-    <div id="status">正在偵測資料格式...</div>
+    <h1>🍎 食品營養查詢</h1>
+    <div id="status">正在準備資料庫...</div>
     
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="請輸入食物名稱 (如: 雞、大麥)..." disabled>
+        <input type="text" id="searchInput" placeholder="輸入食物名稱 (如: 雞、蛋)..." disabled>
         <button onclick="doSearch()">搜尋</button>
     </div>
 
@@ -68,7 +103,6 @@
 
 <script>
     let db = [];
-    // 預設欄位索引
     let colIndices = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, na: 22, k: 23, p: 28 };
 
     Papa.parse("data.csv", {
@@ -78,7 +112,7 @@
         complete: function(results) {
             const rows = results.data;
             
-            // 自動偵測標題列
+            // 找標題
             let headerIdx = rows.findIndex(r => r.some(cell => cell && cell.includes("樣品名稱")));
             if (headerIdx === -1) headerIdx = 0;
 
@@ -107,12 +141,12 @@
                 p:    row[colIndices.p] || "0"
             })).filter(item => item.name !== "");
 
-            document.getElementById('status').innerText = `✅ 載入成功！共 ${db.length} 筆資料。`;
+            document.getElementById('status').innerText = `✅ 資料就緒，共 ${db.length} 筆。`;
             document.getElementById('status').style.color = "green";
             document.getElementById('searchInput').disabled = false;
         },
         error: function() {
-            document.getElementById('status').innerText = "❌ 讀取失敗：請檢查 data.csv 是否存在。";
+            document.getElementById('status').innerText = "❌ 讀取失敗：data.csv 遺失";
             document.getElementById('status').style.color = "red";
         }
     });
@@ -127,7 +161,8 @@
             return;
         }
 
-        const filtered = db.filter(item => item.name.toLowerCase().includes(query)).slice(0, 50);
+        // 手機版效能優化：一次只顯示前 30 筆，避免手機卡頓
+        const filtered = db.filter(item => item.name.toLowerCase().includes(query)).slice(0, 30);
 
         if (filtered.length > 0) {
             table.style.display = 'table';
@@ -149,6 +184,7 @@
         }
     }
 
+    // 支援 Enter
     document.getElementById('searchInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') doSearch();
     });
