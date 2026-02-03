@@ -6,69 +6,54 @@
     <title>食品營養查詢系統</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        /* 基礎設定：手機版字體優化 */
+        /* --- 基礎設定 --- */
         body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, sans-serif; background-color: #f0f2f5; padding: 15px; margin: 0; }
         .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         h1 { color: #1a73e8; text-align: center; margin: 10px 0 20px 0; font-size: 1.5rem; }
         
-        /* --- 搜尋區域優化 --- */
-        /* 固定在最頂部，層級最高 (z-index: 1000) */
+        /* --- 搜尋區域 --- */
         .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 1000; display: flex; gap: 10px; border-bottom: 1px solid #fff; }
-        
         input { flex: 1; padding: 12px 20px; border: 2px solid #dfe1e5; border-radius: 50px; font-size: 16px; outline: none; -webkit-appearance: none; }
         input:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.2); }
-        
         button { padding: 0 20px; background: #1a73e8; color: white; border: none; border-radius: 50px; cursor: pointer; font-size: 15px; white-space: nowrap; font-weight: bold; }
-        button:active { background-color: #1557b0; transform: scale(0.98); }
         
         #status { text-align: center; padding: 8px; color: #666; font-size: 13px; margin-bottom: 5px; }
         
-        /* --- 表格區域優化 --- */
-        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #eee; -webkit-overflow-scrolling: touch; /* 讓 iOS 滑動更順暢 */ }
+        /* --- 表格區域 --- */
+        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #eee; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 800px; }
         
-        /* 1. 表頭 (Th)：黏在搜尋框下方 (top: 70px)，層級次高 (z-index: 900) */
-        th { 
-            background-color: #1a73e8 !important; 
-            color: #ffffff !important; 
-            padding: 12px 10px; 
-            position: sticky; 
-            top: 65px; /* 關鍵修正：避開上方的搜尋框 */
-            z-index: 900; 
-            font-weight: 500; 
-            text-align: center; 
-            white-space: nowrap;
-        }
-        
-        /* 2. 左上角第一格 (表頭的樣品名稱)：要同時黏上面跟左邊，層級要是表頭裡最高的 (z-index: 950) */
-        th:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 950;
-        }
+        th { background-color: #1a73e8 !important; color: white !important; padding: 12px 10px; position: sticky; top: 65px; z-index: 900; font-weight: 500; text-align: center; white-space: nowrap; }
+        th:first-child { position: sticky; left: 0; z-index: 950; }
 
-        /* 3. 資料列 (Td) */
-        td { padding: 12px 8px; border-bottom: 1px solid #eee; text-align: center; color: #444; font-size: 15px; }
+        td { padding: 12px 8px; border-bottom: 1px solid #eee; text-align: center; color: #444; font-size: 15px; cursor: pointer; }
+        
+        /* 點擊行的互動效果 */
+        tr.data-row:hover { background-color: #e8f0fe !important; }
+        tr.data-row:active { background-color: #d2e3fc !important; }
+
         tr:nth-child(even) { background-color: #f8f9fa; }
         
-        /* 4. 左側固定欄 (Food Name)：黏在左邊，層級要比普通資料高 (z-index: 800) */
-        .food-name { 
-            text-align: left; 
-            font-weight: bold; 
-            color: #333; 
-            position: sticky; 
-            left: 0; 
-            background: white; /* 必須設定背景色，不然滑動時文字會重疊 */
-            min-width: 140px; 
-            max-width: 200px;
-            z-index: 800;
-            border-right: 2px solid #eee; /* 加個右邊框區隔 */
-        }
-        
-        /* 修正：偶數行的左側固定欄背景色要跟著變 */
+        .food-name { text-align: left; font-weight: bold; color: #1a73e8; position: sticky; left: 0; background: white; min-width: 140px; max-width: 200px; z-index: 800; border-right: 2px solid #eee; text-decoration: underline; text-underline-offset: 4px; }
         tr:nth-child(even) .food-name { background-color: #f8f9fa; }
-
         .kcal { color: #d93025; font-weight: bold; }
+
+        /* --- 詳情彈窗 (Modal) --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
+        .modal-container { background: white; width: 90%; max-width: 600px; max-height: 85vh; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.3s; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #1a73e8; border-radius: 12px 12px 0 0; color: white; }
+        .modal-title { font-size: 1.2rem; font-weight: bold; }
+        .close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; }
+        
+        .modal-body { padding: 0; overflow-y: auto; flex: 1; }
+        .detail-table { width: 100%; border-collapse: collapse; }
+        .detail-table tr { border-bottom: 1px solid #f0f0f0; }
+        .detail-table th { background: #f8f9fa !important; color: #555 !important; text-align: left; position: static; width: 50%; font-size: 14px; padding: 10px 15px; }
+        .detail-table td { text-align: right; padding: 10px 15px; color: #333; font-weight: bold; font-size: 14px; position: static; cursor: text; }
+
+        /* Modal 動畫啟用狀態 */
+        .modal-overlay.active { opacity: 1; }
+        .modal-overlay.active .modal-container { transform: translateY(0); }
     </style>
 </head>
 <body>
@@ -78,7 +63,7 @@
     <div id="status">正在準備資料庫...</div>
     
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="輸入食物名稱 (如: 雞、蛋)..." disabled>
+        <input type="text" id="searchInput" placeholder="輸入食物名稱 (如: 雞蛋)..." disabled>
         <button onclick="doSearch()">搜尋</button>
     </div>
 
@@ -86,7 +71,7 @@
         <table id="resultTable" style="display:none;">
             <thead>
                 <tr>
-                    <th style="text-align:left;">樣品名稱</th>
+                    <th style="text-align:left;">樣品名稱 (點擊看詳情)</th>
                     <th>熱量(kcal)</th>
                     <th>蛋白質(g)</th>
                     <th>脂肪(g)</th>
@@ -101,9 +86,25 @@
     </div>
 </div>
 
+<div id="detailModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-container" onclick="event.stopPropagation()"> <div class="modal-header">
+            <span class="modal-title" id="modalTitle">食物名稱</span>
+            <button class="close-btn" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <table class="detail-table">
+                <tbody id="modalContent"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <script>
     let db = [];
-    let colIndices = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, na: 22, k: 23, p: 28 };
+    let currentFiltered = []; // 儲存目前的搜尋結果，方便點擊時抓資料
+    
+    // 關鍵欄位的名稱 (用於列表顯示)，之後會自動抓取正確標題
+    let keyMap = { name: "", kcal: "", pro: "", fat: "", cho: "", na: "", k: "", p: "" };
 
     Papa.parse("data.csv", {
         download: true,
@@ -112,36 +113,37 @@
         complete: function(results) {
             const rows = results.data;
             
-            // 找標題
+            // 1. 找標題列
             let headerIdx = rows.findIndex(r => r.some(cell => cell && cell.includes("樣品名稱")));
             if (headerIdx === -1) headerIdx = 0;
 
             const headers = rows[headerIdx];
-            headers.forEach((h, i) => {
+            
+            // 2. 建立完整的資料物件 & 抓出列表需要的關鍵欄位名稱
+            headers.forEach((h) => {
                 if(!h) return;
                 const txt = h.trim();
-                if (txt === "樣品名稱") colIndices.name = i;
-                if (txt.includes("熱量(kcal)")) colIndices.kcal = i;
-                if (txt.includes("粗蛋白(g)")) colIndices.pro = i;
-                if (txt.includes("粗脂肪(g)")) colIndices.fat = i;
-                if (txt.includes("總碳水化合物(g)")) colIndices.cho = i;
-                if (txt.includes("鈉(mg)")) colIndices.na = i;
-                if (txt.includes("鉀(mg)")) colIndices.k = i;
-                if (txt.includes("磷(mg)")) colIndices.p = i;
+                // 對應列表需要的欄位
+                if (txt === "樣品名稱") keyMap.name = txt;
+                if (txt.includes("熱量(kcal)")) keyMap.kcal = txt;
+                if (txt.includes("粗蛋白(g)")) keyMap.pro = txt;
+                if (txt.includes("粗脂肪(g)")) keyMap.fat = txt;
+                if (txt.includes("總碳水化合物(g)")) keyMap.cho = txt;
+                if (txt.includes("鈉(mg)")) keyMap.na = txt;
+                if (txt.includes("鉀(mg)")) keyMap.k = txt;
+                if (txt.includes("磷(mg)")) keyMap.p = txt;
             });
 
-            db = rows.slice(headerIdx + 1).map(row => ({
-                name: row[colIndices.name] ? row[colIndices.name].trim() : "",
-                kcal: row[colIndices.kcal] || "0",
-                pro:  row[colIndices.pro] || "0",
-                fat:  row[colIndices.fat] || "0",
-                cho:  row[colIndices.cho] || "0",
-                na:   row[colIndices.na] || "0",
-                k:    row[colIndices.k] || "0",
-                p:    row[colIndices.p] || "0"
-            })).filter(item => item.name !== "");
+            // 3. 轉換每一行為一個完整的物件 (包含所有欄位)
+            db = rows.slice(headerIdx + 1).map(row => {
+                let obj = {};
+                headers.forEach((h, i) => {
+                    if(h) obj[h.trim()] = row[i] || ""; // 把所有欄位都存起來
+                });
+                return obj;
+            }).filter(item => item[keyMap.name]); // 過濾掉沒有名稱的空行
 
-            document.getElementById('status').innerText = `✅ 資料就緒，共 ${db.length} 筆。`;
+            document.getElementById('status').innerText = `✅ 資料就緒，共 ${db.length} 筆。點擊食物名稱可看完整成分。`;
             document.getElementById('status').style.color = "green";
             document.getElementById('searchInput').disabled = false;
         },
@@ -161,27 +163,65 @@
             return;
         }
 
-        // 手機版效能優化：一次只顯示前 30 筆，避免手機卡頓
-        const filtered = db.filter(item => item.name.toLowerCase().includes(query)).slice(0, 30);
+        // 搜尋並存入 currentFiltered
+        currentFiltered = db.filter(item => item[keyMap.name].toLowerCase().includes(query)).slice(0, 50);
 
-        if (filtered.length > 0) {
+        if (currentFiltered.length > 0) {
             table.style.display = 'table';
-            body.innerHTML = filtered.map(item => `
-                <tr>
-                    <td class="food-name">${item.name}</td>
-                    <td class="kcal">${item.kcal}</td>
-                    <td>${item.pro}</td>
-                    <td>${item.fat}</td>
-                    <td>${item.cho}</td>
-                    <td>${item.na}</td>
-                    <td>${item.k}</td>
-                    <td>${item.p}</td>
+            // 產生列表，注意這裡加了 onclick="showDetail(index)"
+            body.innerHTML = currentFiltered.map((item, index) => `
+                <tr class="data-row" onclick="showDetail(${index})">
+                    <td class="food-name">${item[keyMap.name]}</td>
+                    <td class="kcal">${item[keyMap.kcal]}</td>
+                    <td>${item[keyMap.pro]}</td>
+                    <td>${item[keyMap.fat]}</td>
+                    <td>${item[keyMap.cho]}</td>
+                    <td>${item[keyMap.na]}</td>
+                    <td>${item[keyMap.k]}</td>
+                    <td>${item[keyMap.p]}</td>
                 </tr>
             `).join('');
         } else {
             table.style.display = 'none';
             alert("找不到該食物，請換個關鍵字試試！");
         }
+    }
+
+    // 顯示詳情彈窗
+    function showDetail(index) {
+        const item = currentFiltered[index];
+        const modal = document.getElementById('detailModal');
+        const title = document.getElementById('modalTitle');
+        const content = document.getElementById('modalContent');
+        
+        // 設定標題
+        title.innerText = item[keyMap.name];
+
+        // 產生所有營養成分的列表
+        let html = '';
+        for (const [key, value] of Object.entries(item)) {
+            // 過濾掉空值或不需要顯示的欄位 (可選)
+            if (key !== "樣品名稱" && value !== "" && value !== "0" && value !== "0.0") {
+                html += `
+                    <tr>
+                        <th>${key}</th>
+                        <td>${value}</td>
+                    </tr>
+                `;
+            }
+        }
+        content.innerHTML = html;
+
+        // 顯示彈窗 (加動畫 class)
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+    }
+
+    // 關閉彈窗
+    function closeModal(event) {
+        const modal = document.getElementById('detailModal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300); // 等動畫結束再隱藏
     }
 
     // 支援 Enter
