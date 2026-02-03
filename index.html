@@ -61,14 +61,14 @@
         }
         input:focus { background-color: white; border-color: #1a73e8; }
 
-        /* 更新後的單位提示文字：兩行顯示 */
+        /* 單位提示文字設定 */
         .unit-info {
             font-size: 11px;
             color: #666;
             text-align: center;
             width: 100%;
             margin-top: 2px;
-            line-height: 1.5; /* 增加一點行高，讓兩行文字不要黏太緊 */
+            line-height: 1.5; /* 設定行高，讓兩行文字不要擠在一起 */
         }
 
         /* --- 滾動區域 --- */
@@ -182,6 +182,7 @@
                 <input type="text" id="searchInput" oninput="doSearch()" placeholder="輸入食物名稱 (如: 蛋)..." disabled>
             </div>
         </div>
+        
         <div class="unit-info">
             此為食藥署2024年更新之資料庫<br>
             所列數值單位均為每100 g可食部分之含量。
