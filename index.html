@@ -6,8 +6,8 @@
     <title>食品營養查詢</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        /* --- App 式佈局核心設定 --- */
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; /* 禁止整頁捲動，只讓表格捲動 */ background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif; }
+        /* --- 基礎設定 --- */
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif; }
         
         .app-container {
             display: flex;
@@ -16,108 +16,111 @@
             max-width: 800px;
             margin: 0 auto;
             background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        /* --- 上半部：固定區 (標題 + 搜尋) --- */
+        /* --- 固定標題列 --- */
         .fixed-header {
-            flex-shrink: 0; /* 禁止壓縮 */
-            padding: 10px 10px 5px 10px;
+            flex-shrink: 0;
+            padding: 8px 10px;
             background: white;
             z-index: 1000;
             border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        h1 { margin: 0 0 8px 0; font-size: 1.1rem; color: #1a73e8; text-align: center; }
+        h1 { 
+            margin: 0; 
+            font-size: 1rem; 
+            color: #1a73e8; 
+            white-space: nowrap; 
+            font-weight: bold;
+        }
 
-        .search-wrapper { position: relative; }
+        .search-wrapper { 
+            flex-grow: 1; 
+            position: relative; 
+        }
+
         input {
             width: 100%;
-            padding: 8px 35px 8px 15px; /* 右邊留空給 icon */
+            padding: 6px 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            font-size: 16px; /* 防止 iOS 自動縮放 */
+            font-size: 14px;
             box-sizing: border-box;
             background-color: #f1f3f4;
             outline: none;
             -webkit-appearance: none;
         }
         input:focus { background-color: white; border-color: #1a73e8; }
-        
-        #status { font-size: 11px; color: #888; text-align: center; margin-top: 4px; height: 15px; }
 
-        /* --- 下半部：滾動區 (表格) --- */
+        /* --- 滾動區域 --- */
         .scroll-content {
-            flex-grow: 1; /* 佔滿剩餘空間 */
-            overflow: auto; /* 只有這裡會有捲軸 */
+            flex-grow: 1;
+            overflow: auto;
             -webkit-overflow-scrolling: touch;
             position: relative;
         }
 
         table { 
             width: 100%; 
-            border-collapse: separate; /* 必須設定 separate 才能讓 sticky 生效 */
+            border-collapse: separate; 
             border-spacing: 0; 
         }
 
-        /* --- 表格樣式 (超緊湊) --- */
+        /* --- 表格樣式 --- */
         
-        /* 1. 表頭：永遠黏在 scroll-content 的頂端 (top: 0) */
+        /* 表頭：只黏上面 (top: 0) */
         th {
             position: sticky;
             top: 0;
             background-color: #1a73e8;
             color: white;
             font-size: 13px;
-            padding: 8px 4px;
+            padding: 8px 2px;
             white-space: nowrap;
-            z-index: 10; /* 比內容高 */
+            z-index: 10;
             text-align: center;
             border-bottom: 1px solid #1557b0;
         }
 
-        /* 2. 左上角那格 (樣品名稱標題)：要黏上面也要黏左邊 */
+        /* 左上角第一格：樣品名稱表頭 */
         th:first-child {
             position: sticky;
-            left: 0;
             top: 0;
-            z-index: 20; /* 最高層級 */
-            border-right: 1px solid #1557b0;
+            left: auto; /* 不固定左邊 */
+            z-index: 10;
+            width: 70px; /* 表頭也縮窄 */
         }
 
-        /* 3. 資料列 */
         td {
-            padding: 6px 4px; /* 極致緊湊 */
-            font-size: 13px;
+            padding: 8px 2px; /* 極窄內距 */
+            font-size: 14px;
             color: #333;
             text-align: center;
             border-bottom: 1px solid #eee;
         }
 
-        /* 4. 左側固定欄 (樣品名稱) */
+        /* 樣品名稱欄位：變窄 (原本約100px -> 現在70px) */
         .food-name {
-            position: sticky;
-            left: 0;
-            background-color: white;
-            z-index: 5; /* 比普通 td 高，但比 th 低 */
+            position: static; /* 不固定 */
             text-align: left;
             font-weight: bold;
             color: #1a73e8;
-            border-right: 1px solid #ddd;
-            min-width: 110px;
-            max-width: 150px;
-            padding-left: 8px;
+            min-width: 70px;  /* 關鍵修改：寬度縮小 */
+            max-width: 90px;  /* 限制最大寬度，強迫換行或節省空間 */
+            padding-left: 4px;
             text-decoration: underline;
             text-underline-offset: 2px;
+            background-color: transparent;
+            font-size: 13px; /* 字體稍微縮小一點以適應窄欄位 */
+            line-height: 1.3;
         }
         
-        /* 斑馬紋 (同時處理固定欄的背景色) */
         tr:nth-child(even) td { background-color: #fcfcfc; }
-        tr:nth-child(even) .food-name { background-color: #fcfcfc; }
-        
-        /* 點擊效果 */
         tr:active td { background-color: #e8f0fe !important; }
-        tr:active .food-name { background-color: #e8f0fe !important; }
 
         .kcal { color: #d93025; font-weight: bold; }
 
@@ -125,7 +128,7 @@
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 3000; display: none;
-            justify-content: center; align-items: flex-end; /* 手機靠下 */
+            justify-content: center; align-items: flex-end;
         }
         .modal-container {
             background: white; width: 100%; max-height: 80%; 
@@ -147,12 +150,11 @@
         
         .detail-table { width: 100%; border-collapse: collapse; }
         .detail-table th { 
-            position: static; /* 彈窗內不需要 sticky */
             background: #f1f3f4 !important; color: #555 !important; 
-            text-align: left; width: 50%; padding: 8px 15px; font-weight: normal; 
+            text-align: left; width: 45%; padding: 8px 15px; font-weight: normal; font-size: 13px;
         }
         .detail-table td { 
-            text-align: right; padding: 8px 15px; font-weight: bold; color: #333; 
+            text-align: right; padding: 8px 15px; font-weight: bold; color: #333; font-size: 13px;
         }
         .detail-table tr { border-bottom: 1px solid #eee; }
 
@@ -163,25 +165,22 @@
 
 <div class="app-container">
     <div class="fixed-header">
-        <h1>🍎 食品營養查詢</h1>
+        <h1>🍎</h1>
         <div class="search-wrapper">
-            <input type="text" id="searchInput" oninput="doSearch()" placeholder="輸入關鍵字 (如: 蛋、大麥)..." disabled>
+            <input type="text" id="searchInput" oninput="doSearch()" placeholder="輸入食物名稱 (如: 蛋)..." disabled>
         </div>
-        <div id="status">資料庫載入中...</div>
     </div>
 
     <div class="scroll-content">
         <table id="resultTable" style="display:none;">
             <thead>
                 <tr>
-                    <th style="text-align:left;">樣品名稱</th>
-                    <th>熱量<br>(kcal)</th>
-                    <th>蛋白<br>(g)</th>
-                    <th>脂肪<br>(g)</th>
-                    <th>碳水<br>(g)</th>
-                    <th>鈉<br>(mg)</th>
-                    <th>鉀<br>(mg)</th>
-                    <th>磷<br>(mg)</th>
+                    <th style="text-align:left;">樣品<br>名稱</th> <th>熱量<br>kcal</th>
+                    <th>蛋白<br>g</th>
+                    <th>脂肪<br>g</th>
+                    <th>碳水<br>g</th>
+                    <th>鉀<br>mg</th>
+                    <th>磷<br>mg</th>
                 </tr>
             </thead>
             <tbody id="resultBody"></tbody>
@@ -207,7 +206,8 @@
     let db = [];
     let displayData = [];
     let rawHeaders = [];
-    let idx = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, na: 22, k: 23, p: 28 };
+    // 移除 na
+    let idx = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, k: 23, p: 28 };
 
     Papa.parse("data.csv", {
         download: true,
@@ -228,7 +228,7 @@
                 if (txt.includes("粗蛋白(g)")) idx.pro = i;
                 if (txt.includes("粗脂肪(g)")) idx.fat = i;
                 if (txt.includes("總碳水化合物(g)")) idx.cho = i;
-                if (txt.includes("鈉(mg)")) idx.na = i;
+                // 鈉不用抓了
                 if (txt.includes("鉀(mg)")) idx.k = i;
                 if (txt.includes("磷(mg)")) idx.p = i;
             });
@@ -243,11 +243,10 @@
                 return itemObj;
             }).filter(item => item["樣品名稱"]);
 
-            document.getElementById('status').innerText = `共 ${db.length} 筆資料`;
             document.getElementById('searchInput').disabled = false;
         },
         error: function() {
-            document.getElementById('status').innerText = "資料讀取失敗";
+            alert("讀取 data.csv 失敗");
         }
     });
 
@@ -265,6 +264,7 @@
 
         if (displayData.length > 0) {
             table.style.display = 'table';
+            // 列表移除鈉欄位
             body.innerHTML = displayData.map((item, index) => `
                 <tr onclick="openModal(${index})">
                     <td class="food-name">${item["樣品名稱"]}</td>
@@ -272,7 +272,6 @@
                     <td>${item[rawHeaders[idx.pro]] || 0}</td>
                     <td>${item[rawHeaders[idx.fat]] || 0}</td>
                     <td>${Math.round(item[rawHeaders[idx.cho]] || 0)}</td>
-                    <td>${item[rawHeaders[idx.na]] || 0}</td>
                     <td>${item[rawHeaders[idx.k]] || 0}</td>
                     <td>${item[rawHeaders[idx.p]] || 0}</td>
                 </tr>
@@ -287,10 +286,8 @@
         const modal = document.getElementById('detailModal');
         const title = document.getElementById('modalTitle');
         const content = document.getElementById('modalContent');
-        const status = document.getElementById('status');
         
-        // 隱藏手機鍵盤
-        document.getElementById('searchInput').blur();
+        document.getElementById('searchInput').blur(); 
 
         title.innerText = item["樣品名稱"];
         
