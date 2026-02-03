@@ -18,29 +18,29 @@
             background: white;
         }
 
-        /* --- 固定標題列 (包含提示文字) --- */
+        /* --- 固定標題列 --- */
         .fixed-header {
             flex-shrink: 0;
-            padding: 8px 10px;
+            padding: 10px; /* 增加一點內距 */
             background: white;
             z-index: 1000;
             border-bottom: 1px solid #ddd;
             display: flex;
-            flex-direction: column; /* 改為垂直排列 */
-            gap: 5px;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        /* 搜尋列那一排 */
         .header-top-row {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             width: 100%;
         }
 
+        /* 1. 第一項 (標題/圖示) 字體變大 */
         h1 { 
             margin: 0; 
-            font-size: 1.2rem; /*稍微調大一點emoji*/
+            font-size: 1.8rem; /* 從 1.2rem 放大到 1.8rem */
             line-height: 1;
         }
 
@@ -49,12 +49,13 @@
             position: relative; 
         }
 
+        /* 2. 搜尋欄字體變大 */
         input {
             width: 100%;
-            padding: 6px 10px;
+            padding: 8px 12px; /* 稍微增加內距 */
             border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
+            border-radius: 6px;
+            font-size: 17px; /* 從 14px 放大到 17px */
             box-sizing: border-box;
             background-color: #f1f3f4;
             outline: none;
@@ -62,13 +63,14 @@
         }
         input:focus { background-color: white; border-color: #1a73e8; }
 
-        /* 新增：單位提示文字 */
+        /* 更新後的單位提示文字 */
         .unit-info {
             font-size: 11px;
             color: #666;
             text-align: center;
             width: 100%;
             margin-top: 2px;
+            line-height: 1.4;
         }
 
         /* --- 滾動區域 --- */
@@ -86,7 +88,6 @@
         }
 
         /* --- 表格樣式 --- */
-        
         th {
             position: sticky;
             top: 0;
@@ -100,13 +101,12 @@
             border-bottom: 1px solid #1557b0;
         }
 
-        /* 左上角第一格 (樣品名稱) */
         th:first-child {
             position: sticky;
             top: 0;
             left: auto; 
             z-index: 10;
-            width: 70px; /* 維持縮窄的寬度 */
+            width: 70px; 
         }
 
         td {
@@ -117,7 +117,6 @@
             border-bottom: 1px solid #eee;
         }
 
-        /* 樣品名稱欄位：窄版、可被覆蓋 */
         .food-name {
             position: static;
             text-align: left;
@@ -182,10 +181,10 @@
         <div class="header-top-row">
             <h1>🍎</h1>
             <div class="search-wrapper">
-                <input type="text" id="searchInput" oninput="doSearch()" placeholder="輸入食物名稱..." disabled>
+                <input type="text" id="searchInput" oninput="doSearch()" placeholder="輸入食物名稱 (如: 蛋)..." disabled>
             </div>
         </div>
-        <div class="unit-info">本資料庫所列數值單位均為每100 g可食部分之含量。</div>
+        <div class="unit-info">此為食藥署2024年更新之資料庫，所列數值單位均為每100 g可食部分之含量。</div>
     </div>
 
     <div class="scroll-content">
