@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食藥署食品營養查詢工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        :root { --primary-color: #2c3e50; --accent-color: #27ae60; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary-color); text-align: center; margin-bottom: 30px; }
+        .search-section { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input[type="text"] { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; min-width: 250px; }
+        input[type="number"] { width: 100px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; }
+        .weight-label { display: flex; align-items: center; gap: 5px; font-weight: bold; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th { background-color: var(--primary-color); color: white; padding: 12px; text-align: left; position: sticky; top: 0; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background-color: #f1f8f5; }
+        
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; background: #e0e0e0; margin-bottom: 4px; }
+        .status { text-align: center; color: #666; margin-top: 10px; }
+        .kcal { font-weight: bold; color: #e67e22; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍎 食品營養成分查詢系統</h1>
+    
+    <div class="search-section">
+        <input type="text" id="searchInput" placeholder="輸入食物名稱（例：雞胸肉, 鮮乳...）" disabled>
+        <div class="weight-label">
+            計算重量：<input type="number" id="weightInput" value="100" min="1"> g
+        </div>
+    </div>
+
+    <div id="status" class="status">正在讀取資料庫...</div>
+
+    <div style="overflow-x: auto;">
+        <table id="resultTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>食物名稱 / 分類</th>
+                    <th>熱量 (kcal)</th>
+                    <th>蛋白質 (g)</th>
+                    <th>脂肪 (g)</th>
+                    <th>碳水 (g)</th>
+                    <th>糖 (g)</th>
+                    <th>鈉 (mg)</th>
+                    <th>膳食纖維 (g)</th>
+                </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let db = [];
+    const csvFileName = '食品營養成分資料庫2024UPDATE2.csv'; // 確保檔案名稱一致
+
+    // 初始化讀取檔案
+    Papa.parse(csvFileName, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        beforeFirstChunk: function(chunk) {
+            // 跳過食藥署檔案的第一行說明文字
+            let lines = chunk.split(/\r\n|\r|\n/);
+            lines.shift(); 
+            return lines.join('\n');
+        },
+        complete: function(results) {
+            db = results.data;
+            document.getElementById('status').innerText = `資料載入成功！共 ${db.length} 筆食品資料。`;
+            document.getElementById('searchInput').disabled = false;
+        },
+        error: function(err) {
+            document.getElementById('status').innerText = "錯誤：找不到 CSV 檔案，請確認檔名是否正確。";
+            console.error(err);
+        }
+    });
+
+    const searchInput = document.getElementById('searchInput');
+    const weightInput = document.getElementById('weightInput');
+    const resultTable = document.getElementById('resultTable');
+    const resultBody = document.getElementById('resultBody');
+
+    function updateSearch() {
+        const keyword = searchInput.value.trim().toLowerCase();
+        const weight = parseFloat(weightInput.value) || 100;
+        const ratio = weight / 100;
+
+        if (keyword.length < 1) {
+            resultTable.style.display = 'none';
+            return;
+        }
+
+        const filtered = db.filter(item => 
+            (item['樣品名稱'] && item['樣品名稱'].toLowerCase().includes(keyword)) ||
+            (item['俗名'] && item['俗名'].toLowerCase().includes(keyword))
+        ).slice(0, 50); // 最多顯示 50 筆避免當機
+
+        if (filtered.length > 0) {
+            resultTable.style.display = 'table';
+            resultBody.innerHTML = filtered.map(item => {
+                const kcal = (parseFloat(item['熱量(kcal)']) * ratio).toFixed(1);
+                const protein = (parseFloat(item['粗蛋白(g)']) * ratio).toFixed(1);
+                const fat = (parseFloat(item['粗脂肪(g)']) * ratio).toFixed(1);
+                const carb = (parseFloat(item['總碳水化合物(g)']) * ratio).toFixed(1);
+                const sugar = (parseFloat(item['糖質總量(g)']) * ratio || 0).toFixed(1);
+                const sodium = (parseFloat(item['鈉(mg)']) * ratio).toFixed(0);
+                const fiber = (parseFloat(item['膳食纖維(g)']) * ratio || 0).toFixed(1);
+
+                return `
+                    <tr>
+                        <td>
+                            <span class="badge">${item['食品分類'] || '未知'}</span><br>
+                            <strong>${item['樣品名稱']}</strong>
+                        </td>
+                        <td class="kcal">${kcal}</td>
+                        <td>${protein}</td>
+                        <td>${fat}</td>
+                        <td>${carb}</td>
+                        <td>${sugar}</td>
+                        <td>${sodium}</td>
+                        <td>${fiber}</td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            resultTable.style.display = 'none';
+        }
+    }
+
+    searchInput.addEventListener('input', updateSearch);
+    weightInput.addEventListener('input', updateSearch);
+</script>
+
+</body>
+</html>
