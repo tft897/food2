@@ -3,114 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>食藥署食品營養查詢</title>
+    <title>食品營養成分查詢</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f8f9fa; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; text-align: center; }
-        .search-section { display: flex; gap: 10px; margin: 20px 0; }
-        input { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background-color: #2c3e50; color: white; padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
-        tr:hover { background-color: #f1f8f5; }
-        .status { font-size: 14px; color: #666; text-align: center; margin-bottom: 10px; }
-        .kcal { font-weight: bold; color: #d35400; }
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; line-height: 1.6; }
+        .search-box { margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f4f4f4; position: sticky; top: 0; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .status { color: #666; font-size: 14px; margin-bottom: 10px; }
+        .kcal { color: #d35400; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🍎 食品營養查詢系統</h1>
-    <div id="status" class="status">正在讀取資料中，請稍候...</div>
-    <div class="search-section">
-        <input type="text" id="searchInput" placeholder="請輸入關鍵字（例如：雞胸肉、奶粉）" disabled>
+    <h2>🍎 食品營養成分查詢</h2>
+    <div id="message" class="status">正在讀取資料庫...</div>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="直接輸入關鍵字（例如：雞胸肉）..." disabled>
     </div>
-    <div style="overflow-x: auto;">
-        <table id="resultTable" style="display: none;">
+
+    <div id="resultArea">
+        <table id="resultTable" style="display:none;">
             <thead>
                 <tr>
-                    <th>食物名稱</th>
+                    <th>樣品名稱</th>
                     <th>熱量(kcal)</th>
                     <th>蛋白質(g)</th>
                     <th>脂肪(g)</th>
                     <th>碳水(g)</th>
-                    <th>鈉(mg)</th>
                 </tr>
             </thead>
             <tbody id="resultBody"></tbody>
         </table>
     </div>
-</div>
 
-<script>
-    let db = [];
-    // 確保檔名與 GitHub 上完全一致
-    const csvFileName = 'data.csv';
+    <script>
+        let foodData = [];
+        // 請確保你的 GitHub 檔案名稱就是 data.csv
+        const csvFile = 'data.csv'; 
 
-    Papa.parse(csvFileName, {
-        download: true,
-        header: false, // 改為 false 手動處理
-        complete: function(results) {
-            const rawData = results.data;
-            // 關鍵修正：找到真正含有「樣品名稱」的那一行作為標題
-            let headerIndex = rawData.findIndex(row => row.includes("樣品名稱"));
-            
-            if (headerIndex !== -1) {
-                const headers = rawData[headerIndex];
-                const dataRows = rawData.slice(headerIndex + 1);
+        Papa.parse(csvFile, {
+            download: true,
+            header: false, // 為了處理食藥署多餘的第一行，設為 false
+            complete: function(results) {
+                const rows = results.data;
+                // 找出真正標題在哪一行（含有 樣品名稱 的那行）
+                const headerIdx = rows.findIndex(r => r.join('').includes("樣品名稱"));
                 
-                // 將陣列轉為物件格式
-                db = dataRows.map(row => {
-                    let obj = {};
-                    headers.forEach((header, i) => {
-                        obj[header.trim()] = row[i];
+                if (headerIdx !== -1) {
+                    const headers = rows[headerIdx];
+                    // 轉換成物件格式
+                    foodData = rows.slice(headerIdx + 1).map(row => {
+                        let obj = {};
+                        headers.forEach((h, i) => {
+                            if(h) obj[h.trim()] = row[i];
+                        });
+                        return obj;
                     });
-                    return obj;
-                });
-
-                document.getElementById('status').innerText = `✅ 載入成功！共 ${db.length} 筆資料。`;
-                document.getElementById('searchInput').disabled = false;
-            } else {
-                document.getElementById('status').innerText = "❌ 格式錯誤：找不到標題列";
+                    document.getElementById('message').innerText = '✅ 資料載入完畢，請開始搜尋。';
+                    document.getElementById('searchInput').disabled = false;
+                } else {
+                    document.getElementById('message').innerText = '❌ 檔案格式有誤，找不到資料欄位。';
+                }
+            },
+            error: function() {
+                document.getElementById('message').innerText = '❌ 找不到 data.csv 檔案。';
             }
-        },
-        error: function() {
-            document.getElementById('status').innerText = "❌ 讀取失敗：請檢查檔案是否存在。";
-        }
-    });
+        });
 
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-        const keyword = e.target.value.trim().toLowerCase();
-        const resultTable = document.getElementById('resultTable');
-        const resultBody = document.getElementById('resultBody');
+        // 搜尋功能：一邊打字一邊顯示
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const keyword = e.target.value.trim().toLowerCase();
+            const resultBody = document.getElementById('resultBody');
+            const resultTable = document.getElementById('resultTable');
 
-        if (!keyword) {
-            resultTable.style.display = 'none';
-            return;
-        }
+            if (!keyword) {
+                resultTable.style.display = 'none';
+                return;
+            }
 
-        const filtered = db.filter(item => 
-            item['樣品名稱'] && item['樣品名稱'].toLowerCase().includes(keyword)
-        ).slice(0, 50);
+            // 過濾資料
+            const filtered = foodData.filter(item => 
+                item['樣品名稱'] && item['樣品名稱'].toLowerCase().includes(keyword)
+            ).slice(0, 50); // 最多顯示 50 筆
 
-        if (filtered.length > 0) {
-            resultTable.style.display = 'table';
-            resultBody.innerHTML = filtered.map(item => `
-                <tr>
-                    <td><strong>${item['樣品名稱']}</strong></td>
-                    <td class="kcal">${item['熱量(kcal)'] || '0'}</td>
-                    <td>${item['粗蛋白(g)'] || '0'}</td>
-                    <td>${item['粗脂肪(g)'] || '0'}</td>
-                    <td>${item['總碳水化合物(g)'] || '0'}</td>
-                    <td>${item['鈉(mg)'] || '0'}</td>
-                </tr>
-            `).join('');
-        } else {
-            resultTable.style.display = 'none';
-        }
-    });
-</script>
+            if (filtered.length > 0) {
+                resultTable.style.display = 'table';
+                resultBody.innerHTML = filtered.map(item => `
+                    <tr>
+                        <td><strong>${item['樣品名稱']}</strong></td>
+                        <td class="kcal">${item['熱量(kcal)'] || '0'}</td>
+                        <td>${item['粗蛋白(g)'] || '0'}</td>
+                        <td>${item['粗脂肪(g)'] || '0'}</td>
+                        <td>${item['總碳水化合物(g)'] || '0'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                resultTable.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
