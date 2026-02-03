@@ -28,4 +28,126 @@
         tr:nth-child(even) { background-color: #f8f9fa; }
         tr:hover { background-color: #f1f7ff; }
         
-        .food-name
+        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: white; min-width: 160px; z-index: 10; }
+        tr:nth-child(even) .food-name { background-color: #f8f9fa; }
+        
+        .kcal { color: #d93025; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍎 食品營養查詢系統</h1>
+    <div id="status">正在偵測資料格式...</div>
+    
+    <div class="search-box">
+        <input type="text" id="searchInput" oninput="doSearch()" placeholder="輸入食物名稱自動搜尋 (例：雞肉、大麥)..." disabled>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="resultTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th style="text-align:left;">樣品名稱</th>
+                    <th>熱量(kcal)</th>
+                    <th>蛋白質(g)</th>
+                    <th>脂肪(g)</th>
+                    <th>碳水(g)</th>
+                    <th>鈉(mg)</th>
+                    <th>鉀(mg)</th>
+                    <th>磷(mg)</th>
+                </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let db = [];
+    // 欄位設定 (含鉀、磷)
+    let colIndices = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, na: 22, k: 23, p: 28 };
+
+    Papa.parse("data.csv", {
+        download: true,
+        header: false,
+        skipEmptyLines: true,
+        complete: function(results) {
+            const rows = results.data;
+            
+            // 找標題
+            let headerIdx = rows.findIndex(r => r.some(cell => cell && cell.includes("樣品名稱")));
+            if (headerIdx === -1) headerIdx = 0;
+
+            const headers = rows[headerIdx];
+            // 校準欄位
+            headers.forEach((h, i) => {
+                if(!h) return;
+                const txt = h.trim();
+                if (txt === "樣品名稱") colIndices.name = i;
+                if (txt.includes("熱量(kcal)")) colIndices.kcal = i;
+                if (txt.includes("粗蛋白(g)")) colIndices.pro = i;
+                if (txt.includes("粗脂肪(g)")) colIndices.fat = i;
+                if (txt.includes("總碳水化合物(g)")) colIndices.cho = i;
+                if (txt.includes("鈉(mg)")) colIndices.na = i;
+                if (txt.includes("鉀(mg)")) colIndices.k = i;
+                if (txt.includes("磷(mg)")) colIndices.p = i;
+            });
+
+            // 抓資料
+            db = rows.slice(headerIdx + 1).map(row => ({
+                name: row[colIndices.name] ? row[colIndices.name].trim() : "",
+                kcal: row[colIndices.kcal] || "0",
+                pro:  row[colIndices.pro] || "0",
+                fat:  row[colIndices.fat] || "0",
+                cho:  row[colIndices.cho] || "0",
+                na:   row[colIndices.na] || "0",
+                k:    row[colIndices.k] || "0",
+                p:    row[colIndices.p] || "0"
+            })).filter(item => item.name !== "");
+
+            document.getElementById('status').innerText = `✅ 載入成功！共 ${db.length} 筆資料。`;
+            document.getElementById('status').style.color = "green";
+            document.getElementById('searchInput').disabled = false;
+        },
+        error: function() {
+            document.getElementById('status').innerText = "❌ 讀取失敗：請檢查 data.csv 是否存在。";
+            document.getElementById('status').style.color = "red";
+        }
+    });
+
+    // 搜尋功能 (被 input oninput 呼叫)
+    function doSearch() {
+        const query = document.getElementById('searchInput').value.trim().toLowerCase();
+        const table = document.getElementById('resultTable');
+        const body = document.getElementById('resultBody');
+
+        if (!query) {
+            table.style.display = 'none';
+            return;
+        }
+
+        const filtered = db.filter(item => item.name.toLowerCase().includes(query)).slice(0, 50);
+
+        if (filtered.length > 0) {
+            table.style.display = 'table';
+            body.innerHTML = filtered.map(item => `
+                <tr>
+                    <td class="food-name">${item.name}</td>
+                    <td class="kcal">${item.kcal}</td>
+                    <td>${item.pro}</td>
+                    <td>${item.fat}</td>
+                    <td>${item.cho}</td>
+                    <td>${item.na}</td>
+                    <td>${item.k}</td>
+                    <td>${item.p}</td>
+                </tr>
+            `).join('');
+        } else {
+            table.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
