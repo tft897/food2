@@ -48,12 +48,14 @@
             position: relative; 
         }
 
+        /* 搜尋欄樣式調整 */
         input {
             width: 100%;
-            padding: 8px 12px;
+            padding: 10px 12px; /* 稍微增加高度，讓大字體不擁擠 */
             border: 1px solid #ccc;
             border-radius: 6px;
-            font-size: 17px;
+            font-size: 19px; /* 字體加大 (原17px -> 19px) */
+            font-weight: 500; /* 稍微加粗一點點讓字更清晰 */
             box-sizing: border-box;
             background-color: #f1f3f4;
             outline: none;
@@ -61,14 +63,14 @@
         }
         input:focus { background-color: white; border-color: #1a73e8; }
 
-        /* 單位提示文字設定 */
+        /* 單位提示文字 */
         .unit-info {
             font-size: 11px;
             color: #666;
             text-align: center;
             width: 100%;
             margin-top: 2px;
-            line-height: 1.5; /* 設定行高，讓兩行文字不要擠在一起 */
+            line-height: 1.5;
         }
 
         /* --- 滾動區域 --- */
