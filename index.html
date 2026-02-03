@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>食品營養查詢系統 (含鉀磷版)</title>
+    <title>食品營養查詢系統</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         h1 { color: #1a73e8; text-align: center; margin-bottom: 25px; }
         
+        /* 搜尋區域 */
         .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 100; display: flex; gap: 10px; }
         input { flex: 1; padding: 15px; border: 2px solid #dfe1e5; border-radius: 25px; font-size: 18px; outline: none; }
         input:focus { border-color: #1a73e8; }
@@ -18,19 +19,21 @@
         
         #status { text-align: center; padding: 10px; color: #666; font-weight: bold; margin-bottom: 10px; border: 1px dashed #ccc; }
         
+        /* 表格樣式：標題藍底白字 */
         .table-wrapper { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; min-width: 850px; }
         
-        /* 標題藍底白字 */
-        th { background-color: #1a73e8; color: white; padding: 15px 12px; position: sticky; top: 0; font-weight: 500; }
+        th { background-color: #1a73e8; color: #ffffff !important; padding: 15px 12px; position: sticky; top: 0; font-weight: 500; text-align: center; }
         
-        td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
+        td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #444; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         tr:hover { background-color: #f1f7ff; }
         
-        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: inherit; min-width: 160px; }
+        /* 樣品名稱黏性固定 */
+        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: white; min-width: 160px; }
+        tr:nth-child(even) .food-name { background-color: #f8f9fa; }
+        
         .kcal { color: #d93025; font-weight: bold; }
-        .mineral { color: #2e7d32; font-weight: 500; } /* 鈉、鉀、磷顏色區分 */
     </style>
 </head>
 <body>
@@ -53,9 +56,9 @@
                     <th>蛋白質(g)</th>
                     <th>脂肪(g)</th>
                     <th>碳水(g)</th>
-                    <th class="mineral">鈉(mg)</th>
-                    <th class="mineral">鉀(mg)</th>
-                    <th class="mineral">磷(mg)</th>
+                    <th>鈉(mg)</th>
+                    <th>鉀(mg)</th>
+                    <th>磷(mg)</th>
                 </tr>
             </thead>
             <tbody id="resultBody"></tbody>
@@ -65,7 +68,7 @@
 
 <script>
     let db = [];
-    // 欄位對應
+    // 預設欄位索引
     let colIndices = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, na: 22, k: 23, p: 28 };
 
     Papa.parse("data.csv", {
@@ -135,9 +138,9 @@
                     <td>${item.pro}</td>
                     <td>${item.fat}</td>
                     <td>${item.cho}</td>
-                    <td class="mineral">${item.na}</td>
-                    <td class="mineral">${item.k}</td>
-                    <td class="mineral">${item.p}</td>
+                    <td>${item.na}</td>
+                    <td>${item.k}</td>
+                    <td>${item.p}</td>
                 </tr>
             `).join('');
         } else {
