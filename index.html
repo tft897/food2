@@ -10,25 +10,27 @@
         .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         h1 { color: #1a73e8; text-align: center; margin-bottom: 25px; }
         
-        /* 搜尋區域：設定為全寬，不顯示按鈕 */
-        .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 100; }
-        input { width: 100%; padding: 15px 20px; border: 2px solid #dfe1e5; border-radius: 25px; font-size: 18px; outline: none; box-sizing: border-box; }
+        /* 搜尋區域 */
+        .search-box { position: sticky; top: 0; background: white; padding: 10px 0; z-index: 100; display: flex; gap: 10px; }
+        input { flex: 1; padding: 15px; border: 2px solid #dfe1e5; border-radius: 25px; font-size: 18px; outline: none; }
         input:focus { border-color: #1a73e8; }
+        button { padding: 0 25px; background: #1a73e8; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background-color: #1557b0; }
         
         #status { text-align: center; padding: 10px; color: #666; font-weight: bold; margin-bottom: 10px; border: 1px dashed #ccc; }
         
-        /* 表格樣式：藍底白字 */
+        /* 表格樣式：標題藍底白字 */
         .table-wrapper { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; min-width: 850px; }
         
-        /* 強制設定標題為藍底白字 */
-        th { background-color: #1a73e8 !important; color: #ffffff !important; padding: 15px 12px; position: sticky; top: 0; font-weight: 500; text-align: center; }
+        th { background-color: #1a73e8; color: #ffffff !important; padding: 15px 12px; position: sticky; top: 0; font-weight: 500; text-align: center; }
         
         td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #444; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         tr:hover { background-color: #f1f7ff; }
         
-        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: white; min-width: 160px; z-index: 10; }
+        /* 樣品名稱黏性固定 */
+        .food-name { text-align: left; font-weight: bold; color: #333; position: sticky; left: 0; background: white; min-width: 160px; }
         tr:nth-child(even) .food-name { background-color: #f8f9fa; }
         
         .kcal { color: #d93025; font-weight: bold; }
@@ -41,7 +43,8 @@
     <div id="status">正在偵測資料格式...</div>
     
     <div class="search-box">
-        <input type="text" id="searchInput" oninput="doSearch()" placeholder="輸入食物名稱自動搜尋 (例：雞肉、大麥)..." disabled>
+        <input type="text" id="searchInput" placeholder="請輸入食物名稱 (如: 雞、大麥)..." disabled>
+        <button onclick="doSearch()">搜尋</button>
     </div>
 
     <div class="table-wrapper">
@@ -65,7 +68,7 @@
 
 <script>
     let db = [];
-    // 欄位設定 (含鉀、磷)
+    // 預設欄位索引
     let colIndices = { name: 2, kcal: 6, pro: 9, fat: 10, cho: 13, na: 22, k: 23, p: 28 };
 
     Papa.parse("data.csv", {
@@ -75,12 +78,11 @@
         complete: function(results) {
             const rows = results.data;
             
-            // 找標題
+            // 自動偵測標題列
             let headerIdx = rows.findIndex(r => r.some(cell => cell && cell.includes("樣品名稱")));
             if (headerIdx === -1) headerIdx = 0;
 
             const headers = rows[headerIdx];
-            // 校準欄位
             headers.forEach((h, i) => {
                 if(!h) return;
                 const txt = h.trim();
@@ -94,7 +96,6 @@
                 if (txt.includes("磷(mg)")) colIndices.p = i;
             });
 
-            // 抓資料
             db = rows.slice(headerIdx + 1).map(row => ({
                 name: row[colIndices.name] ? row[colIndices.name].trim() : "",
                 kcal: row[colIndices.kcal] || "0",
@@ -116,7 +117,6 @@
         }
     });
 
-    // 搜尋功能 (被 input oninput 呼叫)
     function doSearch() {
         const query = document.getElementById('searchInput').value.trim().toLowerCase();
         const table = document.getElementById('resultTable');
@@ -145,8 +145,13 @@
             `).join('');
         } else {
             table.style.display = 'none';
+            alert("找不到該食物，請換個關鍵字試試！");
         }
     }
+
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doSearch();
+    });
 </script>
 
 </body>
