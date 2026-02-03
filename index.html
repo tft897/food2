@@ -2,82 +2,53 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>食品營養查詢 V4</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食品營養成分查詢</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #eee; }
-        .box { background: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto; }
-        input { width: 70%; padding: 10px; }
-        button { padding: 10px; background: blue; color: white; cursor: pointer; }
-        #msg { margin: 10px 0; padding: 10px; background: #fff3cd; font-size: 14px; }
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; line-height: 1.6; }
+        .search-box { margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f4f4f4; position: sticky; top: 0; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .status { color: #666; font-size: 14px; margin-bottom: 10px; }
+        .kcal { color: #d35400; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>🍎 食品查詢系統</h2>
-    <div id="msg">正在檢查檔案...</div>
-    
-    <input type="text" id="keyword" placeholder="輸入名稱 (如: 雞)">
-    <button onclick="find()">搜尋</button>
+    <h2>🍎 食品營養成分查詢</h2>
+    <div id="message" class="status">正在讀取資料庫...</div>
 
-    <div id="out"></div>
-</div>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="直接輸入關鍵字（例如：雞胸肉）..." disabled>
+    </div>
 
-<script>
-    let dataList = [];
-    // 讀取 data.csv
-    Papa.parse("data.csv", {
-        download: true,
-        header: false,
-        complete: function(res) {
-            const rows = res.data;
-            // 找出包含「樣品名稱」的那一行
-            let idx = rows.findIndex(r => r.join('').includes("樣品名稱"));
-            
-            if (idx !== -1) {
-                const head = rows[idx];
-                const rowsData = rows.slice(idx + 1);
-                
-                // 轉為簡單物件
-                dataList = rowsData.map(r => {
-                    let o = {};
-                    head.forEach((h, i) => o[h.trim()] = r[i]);
-                    return o;
-                });
-                document.getElementById('msg').innerText = "✅ 成功載入 " + dataList.length + " 筆。";
-            } else {
-                document.getElementById('msg').innerText = "❌ 錯誤：CSV 格式不對，找不到「樣品名稱」標題。";
-            }
-        },
-        error: function() {
-            document.getElementById('msg').innerText = "❌ 錯誤：找不到 data.csv 檔案。";
-        }
-    });
+    <div id="resultArea">
+        <table id="resultTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>樣品名稱</th>
+                    <th>熱量(kcal)</th>
+                    <th>蛋白質(g)</th>
+                    <th>脂肪(g)</th>
+                    <th>碳水(g)</th>
+                </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+        </table>
+    </div>
 
-    function find() {
-        const k = document.getElementById('keyword').value.trim();
-        if (!k) return;
-        
-        // 搜尋
-        const res = dataList.filter(item => 
-            item['樣品名稱'] && item['樣品名稱'].includes(k)
-        ).slice(0, 20);
+    <script>
+        let foodData = [];
+        // 請確保你的 GitHub 檔案名稱就是 data.csv
+        const csvFile = 'data.csv'; 
 
-        if (res.length > 0) {
-            let html = '<table><tr><th>名稱</th><th>熱量</th></tr>';
-            res.forEach(item => {
-                html += `<tr><td>${item['樣品名稱']}</td><td>${item['熱量(kcal)'] || '0'}</td></tr>`;
-            });
-            html += '</table>';
-            document.getElementById('out').innerHTML = html;
-        } else {
-            document.getElementById('out').innerHTML = "查無資料";
-        }
-    }
-</script>
-
-</body>
-</html>
+        Papa.parse(csvFile, {
+            download: true,
+            header: false, // 為了處理食藥署多餘的第一行，設為 false
+            complete: function(results) {
+                const rows = results.data;
+                //
