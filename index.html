@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>食品營養查詢</title>
+    
+    <link rel="manifest" href="manifest.json">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         /* --- 基礎設定 --- */
@@ -323,6 +326,16 @@
         if (!e || e.target.id === 'detailModal' || e.target.classList.contains('close-btn')) {
             document.getElementById('detailModal').style.display = 'none';
         }
+    }
+
+    // ★★★ 新增：註冊 Service Worker (PWA 離線功能) ★★★
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            // 注意：這裡的路徑 '/food2/sw.js' 對應您的 GitHub Repository 名稱
+            navigator.serviceWorker.register('/food2/sw.js')
+                .then(reg => console.log('Service Worker 註冊成功', reg))
+                .catch(err => console.log('Service Worker 註冊失敗', err));
+        });
     }
 </script>
 
